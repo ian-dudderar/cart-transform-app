@@ -42,7 +42,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               metafieldsSet(
                 metafields: [
                   {
-                    ownerId: "gid://shopify/Shop/73144271103", # Replace with actual shop GID
+                    ownerId: "gid://shopify/Shop/93190947129", # Replace with actual shop GID
                     namespace: "cart_transformation_app",
                     key: "enabled",
                     type: "boolean",
