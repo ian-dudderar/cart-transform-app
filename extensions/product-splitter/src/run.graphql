@@ -1,0 +1,25 @@
+query RunInput {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise {
+        ... on ProductVariant {
+          product {
+            metafield(namespace: "product", key: "components") {
+              value
+            }
+          }
+        }
+      }
+    }
+  }
+  shop {
+    appEnabled: metafield(
+      namespace: "cart_transformation_app"
+      key: "enabled"
+    ) {
+      value
+    }
+  }
+}
