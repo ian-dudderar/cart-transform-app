@@ -13,6 +13,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       `
       query {
         shop {
+          id
           metafield(namespace: "cart_transformation_app", key: "enabled") {
             id
             value
@@ -21,28 +22,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }`,
     );
     const responseJson = await response.json();
+    const id = responseJson.data?.shop?.id;
     const enabled = responseJson.data!.shop!.metafield!;
 
     return {
       enabled: enabled.value === "true",
+      id: id,
     };
   } catch (error) {
-    return { enabled: false };
+    return { enabled: false, id: null }; // Return false if there's an error or if the metafield doesn't exist
   }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  // need to pass id here somehow
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
   const enabled = formData.get("value");
+  const shopId = formData.get("shopId");
 
   const response = await admin.graphql(
     `			
-      mutation ToggleEnabled($value: String!) {
+      mutation ToggleEnabled($value: String!, $id: ID!) {
               metafieldsSet(
                 metafields: [
                   {
-                    ownerId: "gid://shopify/Shop/93190947129", # Replace with actual shop GID
+                    ownerId: $id, # Replace with actual shop GID
                     namespace: "cart_transformation_app",
                     key: "enabled",
                     type: "boolean",
@@ -64,6 +69,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     {
       variables: {
         value: enabled,
+        id: shopId,
       },
     },
   );
@@ -79,19 +85,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const fetcher = useFetcher<typeof action>();
   const data = useLoaderData<typeof loader>();
+  const [shopId, setShopId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(data.enabled);
 
   useEffect(() => {
     setEnabled(data.enabled);
   }, [data.enabled]);
 
-  // Need to set up error handling somehow, if for some reason toggle doesnt work
-  // Dont update settings, throw popup error using useAppBridge()
+  useEffect(() => {
+    setShopId(data.id);
+  }, [data.id]);
 
   const handleChange = async (e: any) => {
-    // setEnabled(e);
-    fetcher.submit({ value: e }, { method: "POST" });
-    // if (!res) setEnabled(!e);
+    fetcher.submit({ value: e, shopId }, { method: "POST" });
   };
 
   return (
